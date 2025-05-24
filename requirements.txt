@@ -1,0 +1,5 @@
+requirements.txt
+Flask
+psutil
+Pillow
+Werkzeug

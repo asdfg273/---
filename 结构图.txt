@@ -1,0 +1,25 @@
+rpi_web_app/
+├── app.py             # 主应用，初始化和注册Blueprints
+├── config.py          # 配置文件 (密钥, 用户数据等)
+├── requirements.txt   # 依赖列表
+├── hidden_files.json  # 持久化存储隐藏文件配置
+├── blueprints/        # 存放各个模块的目录
+│   ├── __init__.py
+│   ├── auth.py          # 用户认证 (登录, 注销)
+│   ├── files.py         # 文件管理 (列表, 上传, 下载, 删除, 预览)
+│   ├── code_runner.py   # 代码运行 (管理员专用)
+│   └── admin_panel.py   # 管理员设置 (隐藏文件等)
+├── static/
+│   └── style.css
+├── templates/
+│   ├── base.html
+│   ├── login.html
+│   ├── home.html        # 新的主页，包含文件列表和侧边栏
+│   ├── code_runner.html # 代码运行器页面
+│   ├── admin_panel.html # 管理员面板页面
+│   └── partials/        # 可选，存放小的模板片段
+│       └── sidebar.html
+│       └── system_stats.html
+└── user_files/        # 用户文件存储
+    ├── admin_user/
+    └── user1_user/

@@ -1,0 +1,8 @@
+{
+    "owner_username": {
+        "relative/path/to/file.txt": {
+            "shared_with": ["user_to_share_with_1", "user_to_share_with_2"],
+            "display_name": "file.txt" 
+        }
+    }
+}
