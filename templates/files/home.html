@@ -1,0 +1,468 @@
+{% extends "base.html" %} {# 继承自基础模板 base.html #}
+
+{% block title %}文件列表 - {{ ('/' + current_path_relative) if current_path_relative else "/ (根目录)" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-4"> {# 使用 container-fluid 获得更大宽度 #}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('files.list_files_root') }}"><i class="fas fa-home"></i> 根目录</a></li>
+            {% set path_parts = current_path_relative.split('/') %}
+            {% set current_accumulated_path = '' %}
+            {% for part in path_parts %}
+                {% if part %}
+                    {% set current_accumulated_path = current_accumulated_path + part + '/' %}
+                    {% if loop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ part }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item"><a href="{{ url_for('files.list_files_with_path', subpath=current_accumulated_path.strip('/')) }}">{{ part }}</a></li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    {# 操作按钮区域 #}
+    <div class="mb-3 d-flex justify-content-start align-items-center flex-wrap">
+        <button type="button" class="btn btn-success me-2 mb-2" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+            <i class="fas fa-upload"></i> 上传文件
+        </button>
+        <button type="button" class="btn btn-primary me-2 mb-2" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+            <i class="fas fa-folder-plus"></i> 新建文件夹
+        </button>
+        {# MODIFIED: Changed parent_dir_relative to parent_dir_relative_to_home #}
+        {% if current_path_relative and parent_dir_relative_to_home is not none %}
+            <a href="{{ url_for('files.list_files_with_path', subpath=parent_dir_relative_to_home) }}" class="btn btn-outline-secondary mb-2">
+                <i class="fas fa-arrow-up"></i> 返回上级
+            </a>
+        {% endif %}
+    </div>
+
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 40%;">名称</th>
+                    <th style="width: 15%;">类型</th>
+                    <th style="width: 10%;">大小</th>
+                    <th style="width: 15%;">修改日期</th>
+                    <th style="width: 20%;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {# MODIFIED: Changed 'items' to 'files' to match backend context variable #}
+                {% for item in files %}
+                <tr>
+                    <td>
+                        {# MODIFIED: item.is_directory to item.is_dir #}
+                        {% if item.is_dir %}
+                            <i class="fas fa-folder text-warning me-2"></i>
+                            {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                            <a href="{{ url_for('files.list_files_with_path', subpath=item.path_for_url) }}">{{ item.name }}</a>
+                        {% else %}
+                            {% if item.is_image %}
+                                <i class="fas fa-file-image text-info me-2"></i>
+                            {% elif item.is_text %}
+                                <i class="fas fa-file-alt text-secondary me-2"></i>
+                            {% elif item.is_code %}
+                                 <i class="fas fa-file-code text-primary me-2"></i>
+                            {% else %}
+                                <i class="fas fa-file text-muted me-2"></i>
+                            {% endif %}
+                            {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                            {# Decide preview link based on type; for now, assuming text preview is default for non-image, non-dir files shown #}
+                            {% if item.is_image %}
+                                <a href="{{ url_for('files.preview_image_file_route', path_from_url=item.path_for_url) }}" title="预览 {{ item.name }}">{{ item.name }}</a>
+                            {% elif item.is_text or item.is_code %}
+                                <a href="{{ url_for('files.preview_text_file_route', path_from_url=item.path_for_url) }}" title="预览 {{ item.name }}">{{ item.name }}</a>
+                            {% else %}
+                                {{ item.name }} {# Non-previewable file types just show name #}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    {# MODIFIED: item.type to item.type_display, item.size to item.size_readable #}
+                    <td><small>{{ item.type_display }}</small></td>
+                    <td><small>{{ item.size_readable }}</small></td>
+                    <td><small>{{ item.last_modified }}</small></td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="文件操作">
+                            {# MODIFIED: item.is_directory to item.is_dir #}
+                            {% if not item.is_dir %}
+                                {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                                <a href="{{ url_for('files.download_file_route', path_from_url=item.path_for_url) }}" class="btn btn-outline-primary btn-sm action-btn" title="下载">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                {% if item.is_image %}
+                                    {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                                    <a href="{{ url_for('files.preview_image_file_route', path_from_url=item.path_for_url) }}" class="btn btn-outline-info btn-sm action-btn" title="预览">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                {% elif item.is_text or item.is_code %}
+                                    {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                                    <a href="{{ url_for('files.preview_text_file_route', path_from_url=item.path_for_url) }}" class="btn btn-outline-info btn-sm action-btn" title="预览">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                {% endif %}
+
+                                {% if item.is_code and is_admin_tpl %} {# 管理员才能运行代码 #}
+                                    {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                                    <a href="{{ url_for('code_runner.run_code', file_path=item.path_for_url) }}" class="btn btn-outline-success" title="运行">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                {% endif %}
+                                
+                                {# 分享按钮 & 管理分享按钮 #}
+                                {# MODIFIED: item.is_shared_by_current_owner to item.is_shared_by_owner #}
+                                {% if item.owner_username == g.user.username or is_admin_tpl %} {# 只有文件所有者或管理员可以分享/管理分享 #}
+                                    {% if item.is_shared_by_owner %}
+                                        <button type="button" class="btn btn-outline-warning manage-share-btn" title="管理分享"
+                                                data-bs-toggle="modal" data-bs-target="#manageShareModal"
+                                                data-filename="{{ item.name }}"
+                                                {# MODIFIED: data-filepath to use item.item_path_relative_to_owner_home_for_sharing #}
+                                                data-filepath="{{ item.item_path_relative_to_owner_home_for_sharing }}"
+                                                {# MODIFIED: item.shared_with_users_list to item.shared_with_users #}
+                                                data-shared-with="{{ item.shared_with_users|join(',') }}">
+                                            <i class="fas fa-users-cog"></i>
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-outline-secondary share-btn" title="分享此文件"
+                                            data-bs-toggle="modal" data-bs-target="#shareFileModal"
+                                            data-filename="{{ item.name }}"
+                                            {# MODIFIED: data-filepath to use item.item_path_relative_to_owner_home_for_sharing #}
+                                            data-filepath="{{ item.item_path_relative_to_owner_home_for_sharing }}">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                {% endif %}
+
+                            {% endif %}
+                            {# 删除按钮，目录和文件都可以删除 #}
+                            <button type="button" class="btn btn-outline-danger delete-btn" title="删除"
+                                    data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"
+                                    data-item-name="{{ item.name }}"
+                                    {# MODIFIED: item.path_relative_to_home to item.path_for_url #}
+                                    data-item-path="{{ item.path_for_url }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">此目录为空。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# --- 模态框 --- #}
+
+{# 上传文件模态框 #}
+<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('files.upload_file_route') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# MODIFIED: name from current_path_for_upload to current_path_relative_for_upload #}
+                <input type="hidden" name="current_path_for_action" value="{{ current_path_relative }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadFileModalLabel">上传文件</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="fileUpload" class="form-label">选择文件</label>
+                        {# MODIFIED: name from file to file_to_upload #}
+                        <input class="form-control" type="file" id="fileUpload" name="file_to_upload" required>
+                    </div>
+                    <p class="text-muted small">当前上传到: /{{ current_path_relative if current_path_relative else "(根目录)" }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-upload"></i> 上传</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# 新建文件夹模态框 #}
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('files.create_folder_route') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# MODIFIED: name from current_path_for_folder to current_path_relative_for_folder #}
+                <input type="hidden" name="current_path_for_action" value="{{ current_path_relative }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createFolderModalLabel">新建文件夹</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folderNameInput" class="form-label">文件夹名称</label> {# Changed id to folderNameInput to avoid conflict #}
+                        {# MODIFIED: name from folder_name to new_folder_name #}
+                        <input type="text" class="form-control" id="folderNameInput" name="folder_name" required>
+                    </div>
+                    <p class="text-muted small">将在 /{{ current_path_relative if current_path_relative else "(根目录)" }} 中创建</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-folder-plus"></i> 创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# 分享文件模态框 #}
+<div class="modal fade" id="shareFileModal" tabindex="-1" aria-labelledby="shareFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+             <form method="POST" action="{{ url_for('files.share_file_action') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# MODIFIED: name from file_path to file_path_relative_to_owner_home_for_sharing #}
+                <input type="hidden" id="shareFilePathInput" name="file_path_relative_to_owner_home_for_sharing" value="">
+                {# ADDED: owner_current_view_path_for_redirect hidden input #}
+                <input type="hidden" name="owner_current_view_path_for_redirect" value="{{ current_path_relative }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shareFileModalLabel">分享文件: <span id="shareFilenameDisplay" class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="shareWithUserSelect" class="form-label">选择分享给的用户:</label>
+                        {# MODIFIED: name from share_with_user to share_with_selected_username #}
+                        {# MODIFIED: users_list to users_for_sharing #}
+                        <select class="form-select" id="shareWithUserSelect" name="share_with_selected_username" required>
+                            <option value="" disabled selected>请选择用户</option>
+                            {% for user_obj_or_name in users_for_sharing %} {# Assuming users_for_sharing contains usernames directly #}
+                                {% set username_to_display = user_obj_or_name.username if user_obj_or_name is mapping else user_obj_or_name %}
+                                {% if username_to_display != g.user.username %} {# 不分享给自己 #}
+                                    <option value="{{ username_to_display }}">{{ username_to_display }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-share-alt"></i> 确认分享</button>
+                </div>
+             </form>
+        </div>
+    </div>
+</div>
+
+{# 管理分享模态框 #}
+<div class="modal fade" id="manageShareModal" tabindex="-1" aria-labelledby="manageShareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageShareModalLabel">管理分享: <span id="manageFilenameDisplay" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>此文件当前分享给以下用户:</p>
+                <ul class="list-group" id="sharedWithUserList">
+                    <li class="list-group-item text-muted" id="noOneSharedWithMsg" style="display:none;">目前未分享给任何人。</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{# 删除确认模态框 #}
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('files.delete_item_route') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# MODIFIED: name from item_path to item_path_to_delete #}
+                <input type="hidden" id="deleteItemPathInput" name="item_path_to_delete" value=""> {# Changed ID to avoid clash with function #}
+                {# MODIFIED: name from current_path to current_view_path_for_redirect #}
+                <input type="hidden" name="current_view_path_for_redirect" value="{{ current_path_relative }}">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">确认删除</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>你确定要删除项目 "<strong id="deleteItemNameDisplay"></strong>" 吗？</p> {# Changed ID #}
+                    <p class="text-danger"><strong>此操作不可恢复！</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> 确认删除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 处理分享文件模态框的数据填充
+    var shareFileModal = document.getElementById('shareFileModal');
+    if (shareFileModal) {
+        shareFileModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var filename = button.getAttribute('data-filename');
+            var filepath = button.getAttribute('data-filepath'); // This should be item.item_path_relative_to_owner_home_for_sharing
+
+            var modalTitle = shareFileModal.querySelector('#shareFilenameDisplay'); 
+            var filePathInput = shareFileModal.querySelector('#shareFilePathInput'); // Correct ID of the hidden input
+            
+            if (modalTitle) modalTitle.textContent = filename;
+            if (filePathInput) filePathInput.value = filepath;
+        });
+    }
+
+    // 处理删除确认模态框的数据填充
+    var deleteConfirmModal = document.getElementById('deleteConfirmModal');
+    if (deleteConfirmModal) {
+        deleteConfirmModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var itemName = button.getAttribute('data-item-name');
+            var itemPath = button.getAttribute('data-item-path'); // This should be item.path_for_url
+
+            var modalItemName = deleteConfirmModal.querySelector('#deleteItemNameDisplay'); // Corrected ID
+            var itemPathInput = deleteConfirmModal.querySelector('#deleteItemPathInput'); // Corrected ID
+
+            if (modalItemName) modalItemName.textContent = itemName;
+            if (itemPathInput) itemPathInput.value = itemPath;
+        });
+    }
+
+    // 处理管理分享模态框
+    var manageShareModal = document.getElementById('manageShareModal');
+    if (manageShareModal) {
+        manageShareModal.addEventListener('show.bs.modal', function(event) {
+            var button = event.relatedTarget;
+            var filename = button.getAttribute('data-filename');
+            var filepath = button.getAttribute('data-filepath'); // This should be item.item_path_relative_to_owner_home_for_sharing
+            var sharedWithStr = button.getAttribute('data-shared-with'); // This should be item.shared_with_users|join(',')
+            
+            var modalTitle = manageShareModal.querySelector('#manageFilenameDisplay');
+            var userListUl = manageShareModal.querySelector('#sharedWithUserList');
+            var noOneMsg = manageShareModal.querySelector('#noOneSharedWithMsg');
+
+            if (modalTitle) modalTitle.textContent = filename;
+            if (userListUl) userListUl.innerHTML = ''; 
+
+            if (noOneMsg) noOneMsg.style.display = 'none'; 
+
+            if (sharedWithStr) {
+                var sharedWithArray = sharedWithStr.split(',').filter(Boolean); 
+                if (sharedWithArray.length > 0) {
+                    sharedWithArray.forEach(function(user) {
+                        var li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        li.textContent = user;
+                        
+                        var unshareBtn = document.createElement('button');
+                        unshareBtn.className = 'btn btn-sm btn-outline-danger unshare-for-user-btn';
+                        unshareBtn.innerHTML = '<i class="fas fa-user-times"></i> 取消分享';
+                        unshareBtn.setAttribute('data-unshare-user', user);
+                        unshareBtn.setAttribute('data-file-path', filepath); // filepath from manage-share-btn
+
+                        li.appendChild(unshareBtn);
+                        if (userListUl) userListUl.appendChild(li);
+                    });
+                } else {
+                     if (noOneMsg) noOneMsg.style.display = 'block';
+                }
+            } else {
+                if (noOneMsg) noOneMsg.style.display = 'block';
+            }
+        });
+    }
+
+    // 处理模态框内的取消分享按钮点击 (使用事件委托)
+    document.body.addEventListener('click', function(event) {
+        var clickedButton = event.target.closest('.unshare-for-user-btn');
+        if (clickedButton) {
+            var userToUnshare = clickedButton.getAttribute('data-unshare-user');
+            var filePath = clickedButton.getAttribute('data-file-path'); // This is item.item_path_relative_to_owner_home_for_sharing
+
+            if (!filePath || !userToUnshare) {
+                console.error('Missing filePath or userToUnshare for unshare operation.');
+                alert('取消分享操作失败：缺少参数。');
+                return;
+            }
+
+            if (confirm('确定要取消对用户 ' + userToUnshare + ' 的分享吗？')) {
+                var formData = new FormData();
+                // MODIFIED: Keys for formData to match backend expectations
+                formData.append('file_path_to_unshare_rel_to_owner_home', filePath);
+                formData.append('username_to_unshare_from', userToUnshare);
+                
+                var csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+                var csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+
+                if (!csrfToken) {
+                    console.error('CSRF token not found!');
+                    alert('安全验证失败，请刷新页面重试。');
+                    return;
+                }
+
+                fetch("{{ url_for('files.unshare_file_action') }}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) { 
+                        return response.json().then(errData => { throw new Error(errData.message || 'Server error ' + response.status); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // alert(data.message); 
+                        clickedButton.closest('li').remove(); // Remove the item from the list
+                        
+                        var userListUl = document.getElementById('sharedWithUserList');
+                        var noOneMsg = document.getElementById('noOneSharedWithMsg');
+                        var hasVisibleItems = false;
+                        if (userListUl) { // Check if any actual user items are left
+                            var listItems = userListUl.querySelectorAll('li:not(#noOneSharedWithMsg)');
+                            if (listItems.length > 0) {
+                                hasVisibleItems = true;
+                            }
+                        }
+
+                        if (!hasVisibleItems && noOneMsg) {
+                           noOneMsg.style.display = 'block'; // Show "not shared" message if list is empty
+                        }
+                        // Consider a less disruptive way to update UI or specific element rather than full reload.
+                        // For now, reload is simple.
+                        window.location.reload(); 
+                    } else {
+                        alert('取消分享失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error unsharing file:', error);
+                    alert('取消分享时发生错误: ' + error.message);
+                });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block sidebar_extra %}
+    {# 你可以在这里为文件管理页面添加特定的侧边栏内容 #}
+    {# 例如，一个快速导航到常用文件夹的列表等 #}
+{% endblock %}

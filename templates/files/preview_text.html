@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}预览: {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('files.list_files_root') }}"><i class="fas fa-home"></i> 根目录</a></li>
+            {% if current_path_relative %}
+                {% set path_parts = current_path_relative.split('/') %}
+                {% for i in range(path_parts|length) %}
+                    {% set part_path = '/'.join(path_parts[:i+1]) %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('files.list_files_with_path', subpath=part_path) }}">{{ path_parts[i] }}</a></li>
+                {% endfor %}
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ filename }} (预览)</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>预览: <span class="text-muted">{{ filename }}</span></h2>
+        <a href="{{ url_for('files.list_files_with_path', subpath=current_path_relative) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 返回到 "{{ current_path_relative if current_path_relative else '根目录' }}"
+        </a>
+    </div>
+    <hr>
+    <pre class="p-3 border bg-light rounded" style="white-space: pre-wrap; word-wrap: break-word; max-height: 70vh; overflow-y: auto;">{{ content }}</pre>
+</div>
+{% endblock %}

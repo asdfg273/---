@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}错误 400 - 错误的请求{% endblock %}
+{% block content %}
+    <h2>错误的请求 (400)</h2>
+    <p>{{ error_message | default('您的请求无法被服务器理解。') }}</p>
+    <p><a href="{{ url_for('main.index') }}">返回首页</a></p>
+{% endblock %}

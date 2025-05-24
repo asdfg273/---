@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}管理员面板 - 文件隐藏管理{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <h2>管理员面板 - 文件隐藏管理</h2>
+    <hr>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h4>选择用户进行文件隐藏管理</h4>
+    <form method="GET" action="{{ url_for('admin_panel.panel_home') }}" class="mb-3">
+        <div class="input-group">
+            <select name="manage_user" class="form-select" onchange="this.form.submit()">
+                <option value="">-- 请选择一个用户 --</option>
+                {% for username, data in non_admin_users.items() %}
+                    <option value="{{ username }}" {% if selected_user_for_management == username %}selected{% endif %}>
+                        {{ username }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">加载用户文件</button>
+        </div>
+    </form>
+
+    {% if selected_user_for_management %}
+        <hr>
+        <h4>管理用户 '{{ selected_user_for_management }}' 的文件可见性</h4>
+        <p>勾选的文件/文件夹将对用户 '{{ selected_user_for_management }}' 隐藏。</p>
+        
+        {% if user_files_to_manage %}
+            <form method="POST" action="{{ url_for('admin_panel.panel_home') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="update_hidden_files">
+                <input type="hidden" name="target_user" value="{{ selected_user_for_management }}">
+                
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>隐藏</th>
+                            <th>类型</th>
+                            <th>路径 (相对于用户主目录)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in user_files_to_manage %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" 
+                                       name="hidden_paths_for_user_{{ selected_user_for_management }}" 
+                                       value="{{ item.path }}" 
+                                       {% if item.is_hidden %}checked{% endif %}
+                                       class="form-check-input">
+                            </td>
+                            <td>{% if item.is_dir %}文件夹{% else %}文件{% endif %}</td>
+                            <td>{{ item.path }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-success">保存对 '{{ selected_user_for_management }}' 的隐藏设置</button>
+            </form>
+        {% else %}
+            <p class="text-muted">用户 '{{ selected_user_for_management }}' 的主目录中没有可管理的文件或文件夹，或者目录无法访问。</p>
+        {% endif %}
+    {% endif %}
+
+</div>
+{% endblock %}

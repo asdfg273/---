@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if items %}
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>名称</th>
+                <th>类型</th>
+                <th>大小</th>
+                <th>修改日期</th>
+                <th>所有者</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>
+                    {% if item.is_dir %}
+                        <i class="fas fa-folder text-warning mr-2"></i>
+                        {# Shared directories might not be directly navigable this way yet #}
+                        {{ item.name }}
+                    {% else %}
+                        <i class="fas fa-file text-secondary mr-2"></i>
+                        {{ item.name }}
+                    {% endif %}
+                </td>
+                <td>{{ item.type_display }}</td>
+                <td>{{ item.size_readable }}</td>
+                <td>{{ item.last_modified }}</td>
+                <td>{{ item.owner_username }}</td>
+                <td>
+                    {% if not item.is_dir %}
+                        <a href="{{ url_for('files.download_file_route', path_from_url=item.path_for_url) }}" class="btn btn-sm btn-outline-primary me-1" title="下载">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        {% if item.is_text or item.is_image %}
+                            <a href="{{ url_for('files.preview_text_file' if item.is_text else 'files.preview_image_file', subpath=item.path_for_url) }}" class="btn btn-sm btn-outline-info me-1" title="预览">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    {# Add other actions for shared files if needed, e.g., copy to my files #}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>没有与您共享的文件。</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+/* static/css/style.css */
+
+/* --- General Body & Typography --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* A common, clean sans-serif font stack */
+    background-color: #f8f9fa; /* A light gray, similar to Bootstrap's default light backgrounds */
+    color: #212529; /* Bootstrap's default text color */
+    display: flex; /* Enable flexbox for sticky footer */
+    flex-direction: column; /* Stack children vertically */
+    min-height: 100vh; /* Ensure body takes at least full viewport height */
+}
+
+/* Wrapper to push footer down */
+.main-content-wrapper {
+    flex: 1 0 auto; /* Allows this element to grow and take available space */
+}
+
+
+/* --- Navbar Customizations (Optional, Bootstrap handles most) --- */
+.navbar-brand i.fa-raspberry-pi {
+    color: #E0205C; /* A Raspberry Pi-like pink/red */
+    margin-right: 8px;
+}
+
+/* --- Sidebar Styling --- */
+/* The base.html uses Bootstrap classes for layout (col-md-3, bg-light) */
+/* So, custom CSS here is mostly for internal elements or minor tweaks */
+.sidebar {
+    border-right: 1px solid #dee2e6; /* Optional: adds a subtle separator */
+    /* Bootstrap's position-sticky and pt-3 in base.html handle positioning and top padding */
+}
+
+    .sidebar .sidebar-heading {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: .05rem;
+        color: #6c757d; /* Bootstrap's text-muted */
+        padding-bottom: .25rem;
+        margin-bottom: .75rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .sidebar .nav-link {
+        color: #343a40; /* Darker text for better contrast on bg-light */
+        font-weight: 500;
+        padding: .5rem 1rem; /* Standard Bootstrap nav-link padding */
+    }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #007bff; /* Bootstrap primary color */
+            background-color: #e9ecef; /* Light background for active/hover */
+        }
+
+        .sidebar .nav-link i {
+            width: 1.3em; /* Give icons a bit of space to align them */
+            text-align: center; /* Center icons if they have different widths */
+            margin-right: 0.5rem;
+        }
+
+/* System Stats in Sidebar */
+.system-stats {
+    padding: 0 1rem 1rem 1rem; /* Add some padding */
+    font-size: 0.9em;
+}
+
+    .system-stats h3,
+    .system-stats h5 { /* For the heading inside partials/system_stats.html */
+        font-size: 0.9rem; /* Match sidebar-heading */
+        text-transform: uppercase;
+        letter-spacing: .05rem;
+        color: #6c757d;
+        margin-top: 1.5rem; /* Space above system stats */
+        margin-bottom: 0.75rem;
+    }
+
+    .system-stats ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .system-stats li {
+        margin-bottom: 0.5em;
+        color: #495057;
+    }
+
+        .system-stats li i {
+            margin-right: 8px;
+            color: #6c757d; /* Muted color for icons */
+            width: 1.2em;
+            text-align: center;
+        }
+
+    .system-stats small {
+        font-size: 0.8em;
+        color: #6c757d;
+    }
+
+
+/* --- Main Content Area --- */
+/* `main` tag in base.html has Bootstrap column and padding classes (px-md-4) */
+/* So, custom styles might not be strictly needed for layout */
+main {
+    padding-top: 1.5rem; /* Add some default top padding if not covered by Bootstrap's px-md-4 */
+    padding-bottom: 1.5rem;
+}
+
+/* --- Tables (e.g., in files/home.html) --- */
+.table th,
+.table td {
+    vertical-align: middle; /* Useful for cells with icons and text */
+}
+
+.table .action-btn {
+    margin-right: 0.3rem; /* Space between action buttons */
+    padding: .25rem .5rem; /* Slightly smaller buttons */
+}
+
+    .table .action-btn:last-child {
+        margin-right: 0;
+    }
+
+.table .icon-type {
+    width: 1.5em; /* For file type icons in table */
+    text-align: center;
+    margin-right: 0.5rem;
+}
+
+/* --- Form Elements (General Styling) --- */
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* --- Buttons (Complementing Bootstrap) --- */
+/* Bootstrap provides .btn, .btn-primary, .btn-danger etc. */
+/* Use those classes directly in HTML where possible. */
+/* Example for a custom button if needed:
+.my-custom-btn {
+    background-color: #your-color;
+    color: white;
+}
+.my-custom-btn:hover {
+    background-color: #darker-your-color;
+}
+*/
+
+/* Action buttons styling, e.g., delete confirmation */
+.btn-confirm-delete {
+    width: 100%; /* Make confirm button full width in modal */
+}
+
+
+/* --- Flash Messages --- */
+/* Bootstrap's .alert classes handle this well. */
+/* .alert { margin-bottom: 1rem; } */
+
+
+/* --- Footer --- */
+.footer {
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    font-size: 0.9em;
+    /* Bootstrap classes bg-light, text-center, border-top, py-3 in base.html handle styling */
+}
+
+/* --- Utility --- */
+.icon {
+    margin-right: 0.5rem;
+}

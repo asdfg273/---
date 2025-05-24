@@ -1,0 +1,28 @@
+{# templates/partials/system_stats.html #}
+{% if system_stats %}
+<div class="system-stats-card mt-auto p-3 bg-light rounded border mb-3">
+    <h5 class="card-title-sm">服务器状态</h5>
+    <small>
+        <ul class="list-unstyled mb-0">
+            <li><i class="fas fa-thermometer-half me-1 text-danger"></i>温度: {{ system_stats.temperature }}</li>
+            <li><i class="fas fa-memory me-1 text-primary"></i>内存: {{ system_stats.ram_used }} / {{ system_stats.ram_total }}</li>
+            <li>
+                <i class="fas fa-hdd me-1 text-success"></i>根分区: {{ system_stats.disk_root_free }}
+                ({{ (100 - system_stats.disk_root_total.split('(')[-1].split('%')[0] | float) | round(1) }}% 已用)
+            </li>
+            {% if system_stats.user_disk_total != "N/A" %}
+            <li>
+                <i class="fas fa-external-link-alt me-1 text-info"></i>用户数据: {{ system_stats.user_disk_free }}
+                ({{ (100 - system_stats.user_disk_total.split('(')[-1].split('%')[0] | float) | round(1) }}% 已用)
+                <br><span class="text-muted fst-italic" style="font-size: 0.8em;">路径: {{ system_stats.user_disk_path }}</span>
+            </li>
+            {% endif %}
+        </ul>
+    </small>
+</div>
+{% else %}
+<div class="system-stats-card mt-auto p-3 bg-light rounded border mb-3">
+    <h5 class="card-title-sm">服务器状态</h5>
+    <small><p class="text-muted">系统状态信息不可用。</p></small>
+</div>
+{% endif %}

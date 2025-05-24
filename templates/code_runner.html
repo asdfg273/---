@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}代码运行器{% endblock %}
+
+{% block content %}
+    <h2>代码运行器</h2>
+    {% if session.role == 'admin' %}
+        <p><strong>警告:</strong> 在此执行的代码将通过Firejail沙箱运行。请谨慎操作！</p>
+        <form method="post" action="{{ url_for('code_runner.run_code') }}">
+            <div>
+                <label for="language">选择语言:</label>
+                <select name="language" id="language">
+                    <option value="python" {% if current_language == 'python' %}selected{% endif %}>Python</option>
+                    <option value="cpp" {% if current_language == 'cpp' %}selected{% endif %}>C++ (g++)</option>
+                    {# Add other languages here #}
+                </select>
+            </div>
+            <textarea name="code" rows="20" cols="100" placeholder="在此输入代码...">{{ code | e if code else '' }}</textarea><br> {# 使用 code 变量 #}
+            <input type="submit" value="运行代码">
+        </form>
+        
+        {% if output is not none or error is not none %}
+        <h3>执行结果:</h3>
+        {% if output %}
+            <h4>输出:</h4>
+            <pre>{{ output }}</pre>
+        {% endif %}
+        {% if error %}
+            <h4>错误:</h4>
+            <pre style="color:red;">{{ error }}</pre>
+        {% endif %}
+        {% endif %}
+    {% else %}
+        <p>抱歉，此功能仅限管理员使用。</p>
+    {% endif %}
+{% endblock %}

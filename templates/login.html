@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}登录{% endblock %}
+
+{% block content %}
+    <h2>登录</h2>
+    
+    {# 显示flash消息 #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashes">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+        {# 添加 CSRF Token 隐藏字段 #}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <p>
+            <label for="username">用户名:</label>
+            <input type="text" id="username" name="username" required {% if request.form.username %}value="{{ request.form.username }}"{% endif %}>
+        </p>
+        <p>
+            <label for="password">密码:</label>
+            <input type="password" id="password" name="password" required>
+        </p>
+        <p><input type="submit" value="登录"></p>
+    </form>
+{% endblock %}

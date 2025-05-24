@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}树莓派多功能服务器{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- 你的自定义 CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    {# 这个块留给子模板在 <head> 中添加额外内容，例如特定的 CSS 或 meta 标签 #}
+    {# CSRF token 应该在表单内部，而不是这里 #}
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body class="d-flex flex-column min-vh-100"> {# 使用 Bootstrap Flexbox 实现 Sticky Footer #}
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="{{ url_for('main_index') }}"><i class="fab fa-raspberry-pi me-2"></i>树莓派云</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        {% if g.user %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.blueprint == 'files' %}active{% endif %}" href="{{ url_for('files.list_files_root') }}"><i class="fas fa-folder-open me-1"></i> 文件管理</a>
+                            </li>
+                            {% if g.user.role == 'admin' %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'code_runner' %}active{% endif %}" href="{{ url_for('code_runner.run_code') }}"><i class="fas fa-terminal me-1"></i> 代码运行</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'admin_panel' %}active{% endif %}" href="{{ url_for('admin_panel.panel_home') }}"><i class="fas fa-user-shield me-1"></i> 管理面板</a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    </ul>
+                    <ul class="navbar-nav ms-auto">
+                        {% if g.user %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user me-1"></i> {{ g.user.username }} ({{ g.user.role }})
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownUser">
+                                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-1"></i> 注销</a></li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt me-1"></i> 登录</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    {# 这个 div 包裹主要内容区域，并使其能够扩展以填充导航栏和页脚之间的空间 #}
+    <div class="flex-grow-1">
+        <div class="main-container container-fluid mt-3 mb-3"> {# 添加 mb-3 给内容底部一些空间 #}
+            <div class="row">
+                {% if g.user %} {# 仅当用户登录时显示侧边栏 #}
+                <aside class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse bd-sidebar" id="sidebarMenu">
+                    <div class="position-sticky pt-3">
+                        <h5 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                            <span>导航</span>
+                        </h5>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.blueprint == 'files' and request.endpoint != 'files.shared_with_me' %}active{% endif %}" href="{{ url_for('files.list_files_root') }}">
+                                    <i class="fas fa-copy me-1"></i> 我的文件
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'files.shared_with_me_route' %}active{% endif %}" href="{{ url_for('files.shared_with_me_route') }}">
+                                    <i class="fas fa-share-alt me-1"></i> 与我共享
+                                </a>
+                            </li>
+                            {% if g.user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.blueprint == 'code_runner' %}active{% endif %}" href="{{ url_for('code_runner.run_code') }}">
+                                    <i class="fas fa-code me-1"></i> 代码运行器
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.blueprint == 'admin_panel' %}active{% endif %}" href="{{ url_for('admin_panel.panel_home') }}">
+                                     <i class="fas fa-cog me-1"></i> 管理员设置
+                                </a>
+                            </li>
+                            {% endif %}
+                            {#
+                            <li class="nav-item">
+                                <a class="nav-link disabled" href="#">
+                                    <i class="fas fa-brain me-1"></i> AI训练 (占位)
+                                </a>
+                            </li>
+                            #}
+                        </ul>
+                        <hr>
+                        {% block sidebar_extra %}{% endblock %} {# 这个块留给 files/home.html 等页面去填充额外内容 #}
+
+                        {# 服务器状态信息 #}
+                        {% include 'partials/system_stats.html' %}
+                    </div>
+                </aside>
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                {% else %} {# 如果用户未登录，内容区占据全部宽度 #}
+                <main class="col-12 px-md-4">
+                {% endif %}
+                    {# Flash 消息 #}
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {# 主要内容块 #}
+                    {% block content %}{% endblock %}
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto py-3 bg-light text-center border-top"> {# mt-auto 是 sticky footer 的关键 #}
+        <div class="container">
+            <span class="text-muted">&copy; {{ current_year }} 吕柏谦</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS (一般放在 body 底部) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    {# 这个块留给子模板添加页面特定的 JavaScript #}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}分享文件: {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>分享文件: <span class="text-primary">{{ filename }}</span></h2>
+    <p class="text-muted">文件路径 (相对于您的家目录): {{ file_path_rel }}</p>
+    <hr>
+
+    <form method="POST" action="{{ url_for('files.share_file', subpath=file_path_rel) }}">
+        {{ csrf_token_form() }} {# 确保 CSRF token 在表单中 #}
+        
+        {# 未来可以添加自定义显示名
+        <div class="mb-3">
+            <label for="displayName" class="form-label">在被分享者处显示的名称:</label>
+            <input type="text" class="form-control" id="displayName" name="display_name" value="{{ display_name }}">
+        </div>
+        #}
+
+        <div class="mb-3">
+            <label class="form-label">选择要分享的用户 (可多选):</label>
+            {% if eligible_users %}
+                {% for user in eligible_users %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="share_with_users" value="{{ user }}" id="user_{{ user }}"
+                           {% if user in currently_shared_with %}checked{% endif %}>
+                    <label class="form-check-label" for="user_{{ user }}">
+                        {{ user }}
+                    </label>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">没有其他用户可以分享。</p>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>保存分享设置</button>
+        <a href="{{ request.referrer or url_for('files.list_files_with_path', subpath=file_path_rel.rsplit('/', 1)[0] if '/' in file_path_rel else '') }}" class="btn btn-secondary">
+            <i class="fas fa-times me-2"></i>取消
+        </a>
+    </form>
+    <hr>
+    <p class="small text-muted">
+        提示: 取消所有勾选并保存，即可取消对此文件的所有分享。
+    </p>
+</div>
+{% endblock %}

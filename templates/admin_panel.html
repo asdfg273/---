@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}管理面板{% endblock %}
+
+{% block content %}
+    <h2>管理面板 - 隐藏文件</h2>
+    <p>为指定用户隐藏其主目录下的特定文件或文件夹。管理员始终可以看到所有文件。</p>
+    <form method="post">
+        <p>
+            <label for="user_to_affect">用户:</label>
+            <select name="user_to_affect" id="user_to_affect">
+                <option value="">--选择用户--</option>
+                {% for username, data in users_for_hiding.items() %}
+                    <option value="{{ username }}">{{ username }}</option>
+                {% endfor %}
+            </select>
+        </p>
+        <p>
+            <label for="file_path">文件/文件夹路径 (相对于用户主目录, e.g., 'my_docs/secret.txt' 或 'important_folder'):</label>
+            <input type="text" name="file_path" id="file_path" size="50" required>
+        </p>
+        <p>
+            <button type="submit" name="action" value="hide">隐藏</button>
+            <button type="submit" name="action" value="unhide">取消隐藏</button>
+        </p>
+    </form>
+
+    <h3>当前隐藏规则:</h3>
+    {% if hidden_files_db %}
+    <ul>
+        {% for user, files_list in hidden_files_db.items() %}
+        <li>
+            <strong>{{ user }}:</strong>
+            {% if files_list %}
+            <ul>
+                {% for file_path_item in files_list %}
+                <li>{{ file_path_item }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <span>(无隐藏项)</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>目前没有设置任何隐藏规则。</p>
+    {% endif %}
+{% endblock %}
